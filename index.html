@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT Ujian - MATEMATIKA</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM 18 -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+        /* Hide scrollbar for clean UI */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // ==========================================
+        // KONFIGURASI UJIAN
+        // ==========================================
+        const GOOGLE_SHEETS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzWBtDIHsT195v6pBZULjmxRoPHs2_asvZMBY9VyZwdCD-hUwVaujAwmbH_Hl1yQHoV/exec";
+        const EXAM_SUBJECT = "MATEMATIKA";
+        const EXAM_TYPE = "SUMATIF AKHIR JENJANG (SAJ) 2026/2027";
+        const EXAM_CLASS = "VIII";
+        const EXAM_DURATION_MINUTES = 90;
+        const STORAGE_KEY = `cbt_${EXAM_SUBJECT}_${EXAM_CLASS}`;
+
+        // ==========================================
+        // DATA SOAL (Diekstrak dari PDF)
+        // ==========================================
+        const rawQuestionsData = [
+            { id: 1, text: "Hasil dari 3<sup>4</sup> adalah ...", options: [ { id: '1A', text: "12", isCorrect: false, originalLabel: 'A' }, { id: '1B', text: "27", isCorrect: false, originalLabel: 'B' }, { id: '1C', text: "64", isCorrect: false, originalLabel: 'C' }, { id: '1D', text: "81", isCorrect: true, originalLabel: 'D' } ], type: 'mc' },
+            { id: 2, text: "Bentuk sederhana dari 2<sup>3</sup> &times; 2<sup>4</sup> adalah ...", options: [ { id: '2A', text: "2<sup>7</sup>", isCorrect: true, originalLabel: 'A' }, { id: '2B', text: "2<sup>12</sup>", isCorrect: false, originalLabel: 'B' }, { id: '2C', text: "4<sup>7</sup>", isCorrect: false, originalLabel: 'C' }, { id: '2D', text: "4<sup>12</sup>", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 3, text: "Nilai dari 5<sup>-2</sup> adalah ...", options: [ { id: '3A', text: "-10", isCorrect: false, originalLabel: 'A' }, { id: '3B', text: "25", isCorrect: false, originalLabel: 'B' }, { id: '3C', text: "1/10", isCorrect: false, originalLabel: 'C' }, { id: '3D', text: "1/25", isCorrect: true, originalLabel: 'D' } ], type: 'mc' },
+            { id: 4, text: "Bentuk paling sederhana dari &radic;72 adalah ...", options: [ { id: '4A', text: "6&radic;2", isCorrect: true, originalLabel: 'A' }, { id: '4B', text: "3&radic;8", isCorrect: false, originalLabel: 'B' }, { id: '4C', text: "2&radic;6", isCorrect: false, originalLabel: 'C' }, { id: '4D', text: "12&radic;2", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 5, text: "Bentuk baku (notasi ilmiah) dari 45.000.000 adalah ...", options: [ { id: '5A', text: "4.5 &times; 10<sup>6</sup>", isCorrect: false, originalLabel: 'A' }, { id: '5B', text: "4.5 &times; 10<sup>7</sup>", isCorrect: true, originalLabel: 'B' }, { id: '5C', text: "45 &times; 10<sup>6</sup>", isCorrect: false, originalLabel: 'C' }, { id: '5D', text: "0.45 &times; 10<sup>8</sup>", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 6, text: "Hasil penyederhanaan dari (2a<sup>3</sup>b<sup>2</sup>)<sup>3</sup> adalah ...", options: [ { id: '6A', text: "6a<sup>6</sup>b<sup>5</sup>", isCorrect: false, originalLabel: 'A' }, { id: '6B', text: "8a<sup>6</sup>b<sup>6</sup>", isCorrect: false, originalLabel: 'B' }, { id: '6C', text: "8a<sup>9</sup>b<sup>6</sup>", isCorrect: true, originalLabel: 'C' }, { id: '6D', text: "6a<sup>9</sup>b<sup>6</sup>", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 7, text: "Hasil operasi &radic;48 + &radic;27 - &radic;12 adalah ...", options: [ { id: '7A', text: "5&radic;3", isCorrect: true, originalLabel: 'A' }, { id: '7B', text: "6&radic;3", isCorrect: false, originalLabel: 'B' }, { id: '7C', text: "7&radic;3", isCorrect: false, originalLabel: 'C' }, { id: '7D', text: "9&radic;3", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 8, text: "[Soal Cerita 1] Suatu jenis bakteri membelah diri menjadi 2 setiap 20 menit. Jika mula-mula terdapat 100 sel bakteri, jumlah bakteri setelah 1 jam adalah ...", options: [ { id: '8A', text: "300 sel", isCorrect: false, originalLabel: 'A' }, { id: '8B', text: "400 sel", isCorrect: false, originalLabel: 'B' }, { id: '8C', text: "800 sel", isCorrect: true, originalLabel: 'C' }, { id: '8D', text: "1.600 sel", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 9, text: "Bentuk rasional dari pecahan 6 / (&radic;5 - &radic;2) adalah ...", options: [ { id: '9A', text: "2(&radic;5 + &radic;2)", isCorrect: true, originalLabel: 'A' }, { id: '9B', text: "2(&radic;5 - &radic;2)", isCorrect: false, originalLabel: 'B' }, { id: '9C', text: "3(&radic;5 + &radic;2)", isCorrect: false, originalLabel: 'C' }, { id: '9D', text: "6(&radic;5 + &radic;2)", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 10, text: "Nilai dari (1/27)<sup>-2/3</sup> + (16)<sup>3/4</sup> adalah ...", options: [ { id: '10A', text: "13", isCorrect: false, originalLabel: 'A' }, { id: '10B', text: "17", isCorrect: true, originalLabel: 'B' }, { id: '10C', text: "25", isCorrect: false, originalLabel: 'C' }, { id: '10D', text: "31", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 11, text: "Pada segitiga siku-siku ABC dengan sudut siku-siku di B, hubungan panjang sisi yang benar adalah ...", options: [ { id: '11A', text: "AC<sup>2</sup> = AB<sup>2</sup> + BC<sup>2</sup>", isCorrect: true, originalLabel: 'A' }, { id: '11B', text: "AB<sup>2</sup> = AC<sup>2</sup> + BC<sup>2</sup>", isCorrect: false, originalLabel: 'B' }, { id: '11C', text: "BC<sup>2</sup> = AB<sup>2</sup> + AC<sup>2</sup>", isCorrect: false, originalLabel: 'C' }, { id: '11D', text: "AC<sup>2</sup> = AB<sup>2</sup> - BC<sup>2</sup>", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 12, text: "Dua sisi tegak segitiga siku-siku adalah 6 cm dan 8 cm. Panjang sisi miringnya adalah ...", options: [ { id: '12A', text: "9 cm", isCorrect: false, originalLabel: 'A' }, { id: '12B', text: "10 cm", isCorrect: true, originalLabel: 'B' }, { id: '12C', text: "12 cm", isCorrect: false, originalLabel: 'C' }, { id: '12D', text: "14 cm", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 13, text: "Kelompok panjang sisi berikut yang membentuk Tripel Pythagoras adalah ...", options: [ { id: '13A', text: "3 cm, 4 cm, 6 cm", isCorrect: false, originalLabel: 'A' }, { id: '13B', text: "5 cm, 12 cm, 13 cm", isCorrect: true, originalLabel: 'B' }, { id: '13C', text: "6 cm, 8 cm, 11 cm", isCorrect: false, originalLabel: 'C' }, { id: '13D', text: "7 cm, 10 cm, 13 cm", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 14, text: "Segitiga siku-siku sama kaki memiliki panjang sisi siku-siku 5 cm. Panjang sisi miringnya adalah ...", options: [ { id: '14A', text: "5&radic;2 cm", isCorrect: true, originalLabel: 'A' }, { id: '14B', text: "5&radic;3 cm", isCorrect: false, originalLabel: 'B' }, { id: '14C', text: "10 cm", isCorrect: false, originalLabel: 'C' }, { id: '14D', text: "10&radic;2 cm", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 15, text: "Pada segitiga siku-siku bersudut 30&deg;, 60&deg;, 90&deg;, jika sisi di depan sudut 30&deg; adalah 4 cm, panjang sisi miringnya adalah ...", options: [ { id: '15A', text: "4&radic;3 cm", isCorrect: false, originalLabel: 'A' }, { id: '15B', text: "6 cm", isCorrect: false, originalLabel: 'B' }, { id: '15C', text: "8 cm", isCorrect: true, originalLabel: 'C' }, { id: '15D', text: "8&radic;3 cm", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 16, text: "[Soal Cerita 2] Sebuah tangga panjangnya 5 meter disandarkan pada dinding. Jarak ujung bawah tangga ke dinding 3 meter. Tinggi dinding yang dicapai tangga adalah ...", options: [ { id: '16A', text: "3.5 meter", isCorrect: false, originalLabel: 'A' }, { id: '16B', text: "4.0 meter", isCorrect: true, originalLabel: 'B' }, { id: '16C', text: "4.5 meter", isCorrect: false, originalLabel: 'C' }, { id: '16D', text: "4.8 meter", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 17, text: "[Soal Cerita 3] Sebuah kapal berlayar dari Pelabuhan A ke arah Utara sejauh 12 km, lalu berbelok ke arah Timur sejauh 9 km menuju Pelabuhan B. Jarak terdekat dari Pelabuhan A ke Pelabuhan B adalah ...", options: [ { id: '17A', text: "15 km", isCorrect: true, originalLabel: 'A' }, { id: '17B', text: "18 km", isCorrect: false, originalLabel: 'B' }, { id: '17C', text: "21 km", isCorrect: false, originalLabel: 'C' }, { id: '17D', text: "25 km", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 18, text: "Panjang diagonal persegi panjang berukuran 16 cm &times; 12 cm adalah ...", options: [ { id: '18A', text: "18 cm", isCorrect: false, originalLabel: 'A' }, { id: '18B', text: "20 cm", isCorrect: true, originalLabel: 'B' }, { id: '18C', text: "24 cm", isCorrect: false, originalLabel: 'C' }, { id: '18D', text: "28 cm", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 19, text: "Belah ketupat ABCD memiliki diagonal AC = 16 cm dan BD = 12 cm. Keliling belah ketupat tersebut adalah ...", options: [ { id: '19A', text: "40 cm", isCorrect: true, originalLabel: 'A' }, { id: '19B', text: "48 cm", isCorrect: false, originalLabel: 'B' }, { id: '19C', text: "52 cm", isCorrect: false, originalLabel: 'C' }, { id: '19D', text: "56 cm", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 20, text: "Limas tegak memiliki alas persegi panjang sisi 10 cm dan tinggi limas 12 cm. Tinggi segitiga pada sisi tegak limas adalah ...", options: [ { id: '20A', text: "13 cm", isCorrect: true, originalLabel: 'A' }, { id: '20B', text: "14 cm", isCorrect: false, originalLabel: 'B' }, { id: '20C', text: "15 cm", isCorrect: false, originalLabel: 'C' }, { id: '20D', text: "17 cm", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 21, text: "Di antara kalimat-kalimat berikut, yang merupakan contoh kalimat terbuka adalah ...", options: [ { id: '21A', text: "7 + 5 = 12", isCorrect: false, originalLabel: 'A' }, { id: '21B', text: "Ibu kota Indonesia adalah Nusantara.", isCorrect: false, originalLabel: 'B' }, { id: '21C', text: "x + 4 = 10", isCorrect: true, originalLabel: 'C' }, { id: '21D', text: "3 adalah bilangan genap.", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 22, text: "Penyelesaian dari persamaan linear x + 7 = 15 adalah ...", options: [ { id: '22A', text: "x = 8", isCorrect: true, originalLabel: 'A' }, { id: '22B', text: "x = 9", isCorrect: false, originalLabel: 'B' }, { id: '22C', text: "x = 22", isCorrect: false, originalLabel: 'C' }, { id: '22D', text: "x = -8", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 23, text: "Penyelesaian dari persamaan 4x = 24 adalah ...", options: [ { id: '23A', text: "x = 4", isCorrect: false, originalLabel: 'A' }, { id: '23B', text: "x = 6", isCorrect: true, originalLabel: 'B' }, { id: '23C', text: "x = 8", isCorrect: false, originalLabel: 'C' }, { id: '23D', text: "x = 20", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 24, text: "Bentuk berikut yang merupakan pertidaksamaan linear satu variabel adalah ...", options: [ { id: '24A', text: "2x + 3 = 9", isCorrect: false, originalLabel: 'A' }, { id: '24B', text: "x + y > 5", isCorrect: false, originalLabel: 'B' }, { id: '24C', text: "3x - 4 &le; 11", isCorrect: true, originalLabel: 'C' }, { id: '24D', text: "x<sup>2</sup> + 2x &ge; 0", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 25, text: "Penyelesaian dari pertidaksamaan x - 3 < 5 adalah ...", options: [ { id: '25A', text: "x < 2", isCorrect: false, originalLabel: 'A' }, { id: '25B', text: "x > 8", isCorrect: false, originalLabel: 'B' }, { id: '25C', text: "x < 8", isCorrect: true, originalLabel: 'C' }, { id: '25D', text: "x < -2", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 26, text: "Nilai x yang memenuhi persamaan 3x - 5 = x + 7 adalah ...", options: [ { id: '26A', text: "x = 3", isCorrect: false, originalLabel: 'A' }, { id: '26B', text: "x = 4", isCorrect: false, originalLabel: 'B' }, { id: '26C', text: "x = 6", isCorrect: true, originalLabel: 'C' }, { id: '26D', text: "x = 12", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 27, text: "Penyelesaian dari pertidaksamaan 2x + 4 &ge; 5x - 5 adalah ...", options: [ { id: '27A', text: "x &le; 3", isCorrect: true, originalLabel: 'A' }, { id: '27B', text: "x &ge; 3", isCorrect: false, originalLabel: 'B' }, { id: '27C', text: "x &le; -3", isCorrect: false, originalLabel: 'C' }, { id: '27D', text: "x &ge; -3", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 28, text: "[Soal Cerita 4] Umur Ayah saat ini adalah 3 kali umur Budi. Jika selisih umur Ayah dan Budi adalah 28 tahun, maka umur Budi saat ini adalah ...", options: [ { id: '28A', text: "12 tahun", isCorrect: false, originalLabel: 'A' }, { id: '28B', text: "14 tahun", isCorrect: true, originalLabel: 'B' }, { id: '28C', text: "16 tahun", isCorrect: false, originalLabel: 'C' }, { id: '28D', text: "28 tahun", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 29, text: "[Soal Cerita 5] Mobil angkutan dapat mengangkut beban tidak lebih dari 800 kg. Berat sopir dan kernet total 150 kg. Jika mobil mengangkut kardus barang seberat 25 kg/kardus, kardus maksimum yang dapat diangkut adalah ...", options: [ { id: '29A', text: "24 kardus", isCorrect: false, originalLabel: 'A' }, { id: '29B', text: "25 kardus", isCorrect: false, originalLabel: 'B' }, { id: '29C', text: "26 kardus", isCorrect: true, originalLabel: 'C' }, { id: '29D', text: "27 kardus", isCorrect: false, originalLabel: 'D' } ], type: 'mc' },
+            { id: 30, text: "Taman berbentuk persegi panjang berukuran panjang (2x + 3) meter dan lebar (x + 1) meter. Jika keliling taman tidak lebih dari 32 meter, nilai x maksimum adalah ...", options: [ { id: '30A', text: "x = 4", isCorrect: true, originalLabel: 'A' }, { id: '30B', text: "x = 5", isCorrect: false, originalLabel: 'B' }, { id: '30C', text: "x = 6", isCorrect: false, originalLabel: 'C' }, { id: '30D', text: "x = 7", isCorrect: false, originalLabel: 'D' } ], type: 'mc' }
+        ];
+
+        // ==========================================
+        // KOMPONEN IKON SVG (Anti-Crash DOM)
+        // ==========================================
+        const Icon = ({ name, className = "w-6 h-6" }) => {
+            const icons = {
+                User: <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />,
+                Calendar: <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />,
+                Clock: <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />,
+                Alert: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />,
+                Check: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            };
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+                    {icons[name]}
+                </svg>
+            );
+        };
+
+        // ==========================================
+        // KOMPONEN MODAL GLOBAL (STATIS DI LUAR APP)
+        // ==========================================
+        const CustomModal = ({ isOpen, title, message, type, onConfirm, onClose, confirmText }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center transform transition-all">
+                        <div className="flex justify-center mb-4">
+                            {type === 'alert' ? 
+                                <div className="text-red-500 bg-red-100 p-3 rounded-full"><Icon name="Alert" className="w-10 h-10" /></div> :
+                                <div className="text-blue-500 bg-blue-100 p-3 rounded-full"><Icon name="Check" className="w-10 h-10" /></div>
+                            }
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-800 mb-2">{title}</h3>
+                        <p className="text-gray-600 mb-6">{message}</p>
+                        <div className="flex justify-center gap-4">
+                            {type === 'confirm' && (
+                                <button onClick={onClose} className="px-6 py-2.5 rounded-lg font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 transition">Batal</button>
+                            )}
+                            <button onClick={onConfirm} className={`px-6 py-2.5 rounded-lg font-medium text-white transition ${type === 'alert' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                                {confirmText || 'Mengerti'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // UTILITAS SHUFFLE ARRAY
+        // ==========================================
+        const shuffleArray = (array) => {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        };
+
+        // ==========================================
+        // KOMPONEN UTAMA (APP)
+        // ==========================================
+        const App = () => {
+            const [appState, setAppState] = React.useState('login'); // login, resume, exam, loading, finished
+            const [studentData, setStudentData] = React.useState({ nama: '', kelas: '', tanggal: new Date().toISOString().split('T')[0] });
+            const [questions, setQuestions] = React.useState([]);
+            const [answers, setAnswers] = React.useState({});
+            const [currentIdx, setCurrentIdx] = React.useState(0);
+            const [timeLeft, setTimeLeft] = React.useState(EXAM_DURATION_MINUTES * 60);
+            const [violations, setViolations] = React.useState(0);
+            const [score, setScore] = React.useState(0);
+            
+            // State Modal
+            const [modal, setModal] = React.useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null, onClose: null });
+
+            // Check LocalStorage on Mount
+            React.useEffect(() => {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    setAppState('resume');
+                }
+            }, []);
+
+            // Auto-Save Interval (Real-time every state change)
+            React.useEffect(() => {
+                if (appState === 'exam') {
+                    const dataToSave = { studentData, questions, answers, currentIdx, timeLeft, violations };
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+                }
+            }, [answers, currentIdx, timeLeft, violations, appState]);
+
+            // Timer Logic
+            React.useEffect(() => {
+                let timer;
+                if (appState === 'exam' && timeLeft > 0) {
+                    timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+                } else if (appState === 'exam' && timeLeft <= 0) {
+                    handleAutoSubmit("Waktu Ujian Habis!");
+                }
+                return () => clearInterval(timer);
+            }, [appState, timeLeft]);
+
+            // Anti-Cheat (Events)
+            React.useEffect(() => {
+                if (appState !== 'exam') return;
+
+                const preventDefault = (e) => e.preventDefault();
+                const handleVisibility = () => {
+                    if (document.hidden) triggerViolation("Pindah Tab/Aplikasi");
+                };
+                const handleFullscreen = () => {
+                    if (!document.fullscreenElement) triggerViolation("Keluar dari Mode Layar Penuh");
+                };
+
+                document.addEventListener('contextmenu', preventDefault);
+                document.addEventListener('copy', preventDefault);
+                document.addEventListener('paste', preventDefault);
+                document.addEventListener('visibilitychange', handleVisibility);
+                document.addEventListener('fullscreenchange', handleFullscreen);
+
+                return () => {
+                    document.removeEventListener('contextmenu', preventDefault);
+                    document.removeEventListener('copy', preventDefault);
+                    document.removeEventListener('paste', preventDefault);
+                    document.removeEventListener('visibilitychange', handleVisibility);
+                    document.removeEventListener('fullscreenchange', handleFullscreen);
+                };
+            }, [appState, violations]);
+
+            const triggerViolation = (reason) => {
+                const newV = violations + 1;
+                setViolations(newV);
+                if (newV >= 2) {
+                    handleAutoSubmit("Terdeteksi Kecurangan Berulang (Auto-Submit)!");
+                } else {
+                    setModal({
+                        isOpen: true,
+                        type: 'alert',
+                        title: 'PERINGATAN KECURANGAN!',
+                        message: `Pelanggaran pertama terdeteksi (${reason}). Jika terulang kembali, ujian akan otomatis dihentikan dan disubmit!`,
+                        onConfirm: () => {
+                            setModal({ isOpen: false });
+                            document.documentElement.requestFullscreen().catch(()=>{});
+                        }
+                    });
+                }
+            };
+
+            const startNewExam = () => {
+                if (!studentData.nama || !studentData.kelas) {
+                    setModal({ isOpen: true, type: 'alert', title: 'Data Belum Lengkap', message: 'Harap isi Nama dan Kelas terlebih dahulu!', onConfirm: () => setModal({ isOpen: false }) });
+                    return;
+                }
+                // Acak Soal & Opsi
+                let shuffled = shuffleArray(rawQuestionsData).map(q => ({
+                    ...q,
+                    options: shuffleArray(q.options)
+                }));
+                setQuestions(shuffled);
+                setAppState('exam');
+                document.documentElement.requestFullscreen().catch(()=>{});
+            };
+
+            const resumeExam = () => {
+                const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+                setStudentData(saved.studentData);
+                setQuestions(saved.questions);
+                setAnswers(saved.answers);
+                setCurrentIdx(saved.currentIdx);
+                setTimeLeft(saved.timeLeft);
+                setViolations(saved.violations);
+                setAppState('exam');
+                document.documentElement.requestFullscreen().catch(()=>{});
+            };
+
+            const resetExamProgress = () => {
+                localStorage.removeItem(STORAGE_KEY);
+                setAppState('login');
+            };
+
+            const selectAnswer = (questionId, optionId) => {
+                setAnswers(prev => ({ ...prev, [questionId]: optionId }));
+            };
+
+            // Calculate & Submit
+            const handleAutoSubmit = async (reason) => {
+                setAppState('loading');
+                await processSubmission(reason);
+            };
+
+            const manualSubmitConfirm = () => {
+                setModal({
+                    isOpen: true,
+                    type: 'confirm',
+                    title: 'Selesai & Kumpulkan?',
+                    message: 'Pastikan semua jawaban telah terisi. Anda tidak dapat mengubah jawaban setelah ini.',
+                    confirmText: 'Kumpulkan',
+                    onClose: () => setModal({ isOpen: false }),
+                    onConfirm: () => {
+                        setModal({ isOpen: false });
+                        setAppState('loading');
+                        processSubmission("Selesai Normal");
+                    }
+                });
+            };
+
+            const processSubmission = async (keterangan) => {
+                // Kalkulasi Rincian Jawaban
+                let correctCount = 0;
+                let rincianArray = [];
+                
+                // Urutkan soal kembali berdasarkan ID Asli (1 sampai N)
+                const sortedQuestions = [...questions].sort((a, b) => a.id - b.id);
+
+                sortedQuestions.forEach(q => {
+                    const ansId = answers[q.id];
+                    if (!ansId) {
+                        rincianArray.push(`Soal ${q.id}: KOSONG`);
+                    } else {
+                        const selectedOpt = q.options.find(o => o.id === ansId);
+                        const correctOpt = q.options.find(o => o.isCorrect);
+                        if (selectedOpt && selectedOpt.isCorrect) {
+                            correctCount++;
+                            rincianArray.push(`Soal ${q.id}: BENAR`);
+                        } else {
+                            const ansLabel = selectedOpt ? selectedOpt.originalLabel : '-';
+                            rincianArray.push(`Soal ${q.id}: SALAH (Pilih: ${ansLabel}, Kunci: ${correctOpt.originalLabel})`);
+                        }
+                    }
+                });
+
+                const finalScore = Math.round((correctCount / questions.length) * 100);
+                const rincianString = rincianArray.join(" | ");
+                
+                const payload = {
+                    nama: studentData.nama,
+                    kelas: studentData.kelas,
+                    tanggal: studentData.tanggal,
+                    skor: finalScore,
+                    pelanggaran: violations,
+                    keterangan: keterangan,
+                    rincianJawaban: rincianString
+                };
+
+                try {
+                    await fetch(GOOGLE_SHEETS_WEB_APP_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: JSON.stringify(payload)
+                    });
+                } catch (err) {
+                    console.error("Gagal mengirim data:", err);
+                }
+
+                setScore(finalScore);
+                localStorage.removeItem(STORAGE_KEY);
+                if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+                setAppState('finished');
+            };
+
+            const formatTime = (seconds) => {
+                const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const s = (seconds % 60).toString().padStart(2, '0');
+                return `${m}:${s}`;
+            };
+
+            // RENDER: Login
+            if (appState === 'login') {
+                return (
+                    <div className="flex items-center justify-center min-h-screen p-4">
+                        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+                            <div className="bg-blue-600 p-8 text-center text-white">
+                                <h1 className="text-3xl font-bold tracking-wide">{EXAM_SUBJECT}</h1>
+                                <p className="text-blue-100 mt-2">{EXAM_TYPE} • KELAS {EXAM_CLASS}</p>
+                            </div>
+                            <div className="p-8 space-y-5">
+                                <div>
+                                    <label className="block text-gray-700 font-semibold mb-2">Nama Lengkap</label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><Icon name="User" /></div>
+                                        <input type="text" className="w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Masukkan nama..." value={studentData.nama} onChange={e => setStudentData({...studentData, nama: e.target.value})} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 font-semibold mb-2">Kelas</label>
+                                    <input type="text" className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Contoh: VIII-A" value={studentData.kelas} onChange={e => setStudentData({...studentData, kelas: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 font-semibold mb-2">Tanggal Ujian</label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><Icon name="Calendar" /></div>
+                                        <input type="date" className="w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" value={studentData.tanggal} onChange={e => setStudentData({...studentData, tanggal: e.target.value})} />
+                                    </div>
+                                </div>
+                                <button onClick={startNewExam} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition shadow-lg mt-4">
+                                    MULAI UJIAN
+                                </button>
+                            </div>
+                        </div>
+                        <CustomModal {...modal} />
+                    </div>
+                );
+            }
+
+            // RENDER: Resume Prompt
+            if (appState === 'resume') {
+                return (
+                    <div className="flex items-center justify-center min-h-screen p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
+                            <div className="text-yellow-500 bg-yellow-100 p-4 rounded-full inline-block mb-4"><Icon name="Alert" className="w-10 h-10" /></div>
+                            <h2 className="text-2xl font-bold mb-2">Sesi Tersimpan Ditemukan!</h2>
+                            <p className="text-gray-600 mb-6">Anda memiliki progres ujian yang belum diselesaikan. Ingin melanjutkan?</p>
+                            <div className="space-y-3">
+                                <button onClick={resumeExam} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition">Lanjutkan Ujian</button>
+                                <button onClick={resetExamProgress} className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 rounded-xl transition">Mulai Ulang (Hapus Progres)</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // RENDER: Loading
+            if (appState === 'loading') {
+                return (
+                    <div className="flex items-center justify-center min-h-screen">
+                        <div className="text-center text-white">
+                            <svg className="animate-spin h-12 w-12 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            <h2 className="text-2xl font-bold">Menyimpan Jawaban...</h2>
+                        </div>
+                    </div>
+                );
+            }
+
+            // RENDER: Finished
+            if (appState === 'finished') {
+                return (
+                    <div className="flex items-center justify-center min-h-screen p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl p-10 max-w-lg w-full text-center">
+                            <div className="text-green-500 bg-green-100 p-4 rounded-full inline-block mb-4"><Icon name="Check" className="w-12 h-12" /></div>
+                            <h2 className="text-3xl font-bold mb-2 text-gray-800">Ujian Selesai!</h2>
+                            <p className="text-gray-500 mb-6">Terima kasih telah mengikuti ujian ini.</p>
+                            <div className="bg-blue-50 rounded-xl p-6 mb-6 border border-blue-100">
+                                <p className="text-sm text-blue-600 font-semibold mb-1">NILAI ANDA</p>
+                                <p className="text-5xl font-extrabold text-blue-700">{score}</p>
+                            </div>
+                            <button onClick={() => window.location.reload()} className="bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-8 rounded-xl transition">Kembali ke Beranda</button>
+                        </div>
+                    </div>
+                );
+            }
+
+            // RENDER: Exam UI
+            const q = questions[currentIdx];
+            return (
+                <div className="flex flex-col md:flex-row h-screen bg-gray-50 text-gray-800">
+                    {/* Main Area */}
+                    <div className="flex-1 flex flex-col h-full overflow-hidden">
+                        {/* Header */}
+                        <header className="bg-white shadow-sm px-6 py-4 flex justify-between items-center z-10">
+                            <div>
+                                <h1 className="font-bold text-xl text-blue-700">{EXAM_SUBJECT}</h1>
+                                <p className="text-xs text-gray-500">{studentData.nama} • {studentData.kelas}</p>
+                            </div>
+                            <div className={`flex items-center gap-2 font-mono text-xl font-bold px-4 py-2 rounded-lg ${timeLeft < 300 ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-blue-100 text-blue-700'}`}>
+                                <Icon name="Clock" /> {formatTime(timeLeft)}
+                            </div>
+                        </header>
+
+                        {/* Question Area */}
+                        <main className="flex-1 overflow-y-auto p-6 md:p-10">
+                            <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border p-6 md:p-8">
+                                <div className="flex gap-4 mb-6">
+                                    <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0 text-lg">
+                                        {currentIdx + 1}
+                                    </div>
+                                    <div className="text-lg md:text-xl leading-relaxed text-gray-800 pt-1" dangerouslySetInnerHTML={{ __html: q.text }}></div>
+                                </div>
+                                
+                                {q.image && (
+                                    <div className="mb-6 ml-14">
+                                        <img src={q.image} alt="Soal" className="max-w-full h-auto rounded-lg border shadow-sm" />
+                                    </div>
+                                )}
+
+                                <div className="ml-14 space-y-3 mt-8">
+                                    {q.options.map((opt) => (
+                                        <label key={opt.id} className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all ${answers[q.id] === opt.id ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'hover:bg-gray-50 border-gray-200'}`}>
+                                            <input type="radio" name={`q-${q.id}`} value={opt.id} checked={answers[q.id] === opt.id} onChange={() => selectAnswer(q.id, opt.id)} className="w-5 h-5 text-blue-600 focus:ring-blue-500 border-gray-300" />
+                                            <span className="ml-4 text-[1rem]" dangerouslySetInnerHTML={{ __html: opt.text }}></span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        </main>
+
+                        {/* Navigation Footer */}
+                        <footer className="bg-white border-t p-4 flex justify-between items-center">
+                            <button onClick={() => setCurrentIdx(prev => Math.max(0, prev - 1))} disabled={currentIdx === 0} className="px-6 py-2.5 rounded-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 transition">
+                                &laquo; Sebelumnya
+                            </button>
+                            
+                            {currentIdx === questions.length - 1 ? (
+                                <button onClick={manualSubmitConfirm} className="px-8 py-2.5 rounded-lg font-bold text-white bg-green-600 hover:bg-green-700 shadow-md transition">
+                                    Selesai & Kumpulkan
+                                </button>
+                            ) : (
+                                <button onClick={() => setCurrentIdx(prev => Math.min(questions.length - 1, prev + 1))} className="px-6 py-2.5 rounded-lg font-medium text-white bg-blue-600 hover:bg-blue-700 transition">
+                                    Selanjutnya &raquo;
+                                </button>
+                            )}
+                        </footer>
+                    </div>
+
+                    {/* Sidebar Navigasi Nomor */}
+                    <div className="w-full md:w-80 bg-white border-l flex flex-col h-64 md:h-full flex-shrink-0 shadow-[-4px_0_15px_rgba(0,0,0,0.03)] z-20">
+                        <div className="p-4 border-b bg-gray-50">
+                            <h3 className="font-bold text-gray-700">Navigasi Soal</h3>
+                            <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                                <span className="flex items-center gap-1"><div className="w-3 h-3 bg-green-500 rounded-sm"></div> Dijawab</span>
+                                <span className="flex items-center gap-1"><div className="w-3 h-3 bg-white border border-gray-300 rounded-sm"></div> Belum</span>
+                            </div>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4">
+                            <div className="grid grid-cols-5 gap-2">
+                                {questions.map((question, index) => {
+                                    const isAnswered = !!answers[question.id];
+                                    const isActive = currentIdx === index;
+                                    return (
+                                        <button key={question.id} onClick={() => setCurrentIdx(index)} 
+                                            className={`h-10 rounded-lg font-semibold text-sm transition flex items-center justify-center
+                                                ${isAnswered ? 'bg-green-500 text-white' : 'bg-white border border-gray-300 text-gray-600'}
+                                                ${isActive ? 'ring-2 ring-blue-600 ring-offset-2 scale-110 shadow-sm' : 'hover:opacity-80'}
+                                            `}>
+                                            {index + 1}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Render Modal secara global agar tidak flickering */}
+                    <CustomModal {...modal} />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
